@@ -7,8 +7,8 @@ const pool = new Pool({
   database: 'vagrant'
 });
 
-const properties = require('./json/properties.json');
-const users = require('./json/users.json');
+//const properties = require('./json/properties.json');
+//const users = require('./json/users.json');
 
 
 /// Users
@@ -79,7 +79,24 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  // return getAllProperties(null, 2);
+  return pool
+  .query(`
+  SELECT properties.*, reservations.start_date, reservations.end_date
+  FROM properties 
+  LEFT JOIN reservations ON reservations.property_id = properties.id
+  LEFT JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE reservations.guest_id = $1
+  GROUP BY properties.id, reservations.start_date, reservations.end_date
+  ORDER BY properties.id ASC 
+  LIMIT $2;`, [guest_id, limit])
+  .then((result) => {
+    console.log(result.rows)
+    return result.rows;
+  })
+  .catch((err) => {
+    console.log(err.message);
+  });
 }
 exports.getAllReservations = getAllReservations;
 
